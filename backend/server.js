@@ -5,21 +5,35 @@ const http = require('http');
 const socketIO = require('socket.io');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 
 const app = express();
+
+// Use environment port (Render sets this automatically)
+const PORT = process.env.PORT || 5000;
+
+// Get frontend URL from environment variable (for CORS)
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
 const server = http.createServer(app);
 const io = socketIO(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: FRONTEND_URL,
     methods: ["GET", "POST"],
     credentials: true
   }
 });
 
-app.use(cors());
+app.use(cors({
+  origin: FRONTEND_URL,
+  credentials: true
+}));
 app.use(express.json());
 
-const db = new sqlite3.Database('database.sqlite');
+// Use environment variable for database path (Render persistent disk)
+// For local development, use local file
+const dbPath = process.env.DATABASE_PATH || 'database.sqlite';
+const db = new sqlite3.Database(dbPath);
 
 // Helper: truncate to 50 chars
 function truncate(str, max = 50) {
@@ -67,7 +81,7 @@ db.serialize(() => {
     }
   });
 
-  console.log('✅ Database ready');
+  console.log('✅ Database ready at:', dbPath);
 });
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -80,7 +94,7 @@ const verifyToken = (req, res, next) => {
   }
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, 'secret123');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
     req.userId = decoded.userId;
     next();
   } catch {
@@ -111,7 +125,7 @@ app.post('/api/register', async (req, res) => {
       if (err) {
         return res.status(400).json({ error: 'Username or email already exists' });
       }
-      const token = jwt.sign({ userId: id }, 'secret123');
+      const token = jwt.sign({ userId: id }, process.env.JWT_SECRET || 'secret123');
       res.json({
         token,
         user: { id, username, email, publicKey: publicKey || '', encryptedPrivateKey: encryptedPrivateKey || '' }
@@ -134,7 +148,7 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid password' });
     }
 
-    const token = jwt.sign({ userId: user.id }, 'secret123');
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || 'secret123');
     res.json({
       token,
       user: {
@@ -218,7 +232,7 @@ io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('No token'));
   try {
-    const decoded = jwt.verify(token, 'secret123');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
     socket.userId = decoded.userId;
     next();
   } catch {
@@ -227,11 +241,17 @@ io.use((socket, next) => {
 });
 
 io.on('connection', socket => {
+  console.log('🔌 Client connected:', socket.userId);
   socket.join(`user:${socket.userId}`);
+  
+  socket.on('disconnect', () => {
+    console.log('🔌 Client disconnected:', socket.userId);
+  });
 });
 
 // Start server
-server.listen(5000, () => {
-  console.log('\n🚀 Server running on http://localhost:5000');
-  console.log('📡 Test API: http://localhost:5000/api/test\n');
+server.listen(PORT, () => {
+  console.log(`\n🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📡 Test API: http://localhost:${PORT}/api/test`);
+  console.log(`🔗 CORS allowed from: ${FRONTEND_URL}\n`);
 });
