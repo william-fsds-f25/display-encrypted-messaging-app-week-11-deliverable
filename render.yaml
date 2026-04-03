@@ -1,0 +1,36 @@
+services:
+  # Backend API Service
+  - type: web
+    name: encrypted-messaging-backend
+    runtime: node
+    repo: https://github.com/william-fsds-f25/encrypted-messaging-app-week-11-deliverable
+    plan: free
+    region: oregon
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: 18.0.0
+      - key: FRONTEND_URL
+        value: https://encrypted-messaging-frontend.onrender.com
+    disk:
+      name: sqlite-data
+      mountPath: /data
+      sizeGB: 1
+
+  # Frontend Static Site
+  - type: static
+    name: encrypted-messaging-frontend
+    runtime: static
+    repo: https://github.com/william-fsds-f25/encrypted-messaging-app-week-11-deliverable
+    plan: free
+    region: oregon
+    buildCommand: echo "No build needed for static files"
+    staticPublishPath: ./frontend/src
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    envVars:
+      - key: API_URL
+        value: https://encrypted-messaging-backend.onrender.com
