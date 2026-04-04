@@ -12,7 +12,7 @@ const app = express();
 // Use environment port (Render sets this automatically)
 const PORT = process.env.PORT || 5000;
 
-// ============ CORS CONFIGURATION - HARDCODED ============
+// ============ CORS CONFIGURATION ============
 // REPLACE THIS URL WITH YOUR ACTUAL FRONTEND URL
 const FRONTEND_URL = 'https://display-encrypted-messaging-app-week-11-2mbi.onrender.com';
 
@@ -35,12 +35,13 @@ app.use(express.json());
 const dbPath = process.env.DATABASE_PATH || 'database.sqlite';
 const db = new sqlite3.Database(dbPath);
 
-// Helper functions
+// Helper: truncate to 50 chars
 function truncate(str, max = 50) {
   if (!str) return '';
   return str.length > max ? str.substring(0, max) + '...' : str;
 }
 
+// Helper: extract and truncate encrypted payload for logging
 function logEncrypted(label, messageText) {
   try {
     const parsed = JSON.parse(messageText);
@@ -73,6 +74,7 @@ db.serialize(() => {
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
+  // Add encrypted_private_key column if it doesn't exist
   db.run(`ALTER TABLE users ADD COLUMN encrypted_private_key TEXT`, err => {
     if (err && !err.message.includes('duplicate column')) {
       console.error('Migration error:', err.message);
@@ -100,12 +102,13 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-// Root route - shows CORS status
+// Root route - shows CORS status for debugging
 app.get('/', (req, res) => {
   res.json({ 
     message: 'Encrypted Messaging API is running!',
     status: 'active',
-    cors_allowed_origin: FRONTEND_URL
+    cors_allowed_origin: FRONTEND_URL,
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -213,6 +216,7 @@ app.post('/api/messages', verifyToken, (req, res) => {
           return res.status(500).json({ error: 'Failed to save message' });
         }
 
+        // Log only the encrypted snippet
         logEncrypted(` ${sender.username} → ${toUser}`, messageText);
 
         const messageData = {
