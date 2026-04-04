@@ -1,7 +1,10 @@
 // frontend/src/js/socket.js
-import { getToken, truncate } from './utils.js';
+import { getToken } from './utils.js';
 
 let socket = null;
+
+// Updated to use your Render backend URL
+const SOCKET_URL = 'https://display-encrypted-messaging-app-week-11-whqi.onrender.com';
 
 export function initSocket(onNewMessage) {
     const token = getToken();
@@ -11,36 +14,19 @@ export function initSocket(onNewMessage) {
         socket.disconnect();
     }
     
-    socket = io('http://localhost:5000', { auth: { token } });
+    socket = io(SOCKET_URL, { auth: { token } });
     
     socket.on('connect', () => {
         console.log('✅ Socket connected');
     });
     
     socket.on('new_message', (msg) => {
-        // Log encrypted message only
-        try {
-            const parsed = JSON.parse(msg.message_text);
-            if (parsed.forRecipient) {
-                console.log(`📨 Received: ${truncate(parsed.forRecipient.encryptedMessage)}`);
-            } else if (parsed.encryptedMessage) {
-                console.log(`📨 Received: ${truncate(parsed.encryptedMessage)}`);
-            } else {
-                console.log(`📨 Received: ${truncate(msg.message_text)}`);
-            }
-        } catch {
-            console.log(`📨 Received: ${truncate(msg.message_text)}`);
-        }
-        
+        console.log('📨 New message received');
         if (onNewMessage) onNewMessage(msg);
     });
     
     socket.on('disconnect', () => {
         console.log('❌ Socket disconnected');
-    });
-    
-    socket.on('connect_error', (err) => {
-        console.error('Socket error:', err.message);
     });
     
     return socket;
