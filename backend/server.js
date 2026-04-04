@@ -13,7 +13,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Get frontend URL from environment variable (for CORS)
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const FRONTEND_URL = 'https://display-encrypted-messaging-app-week-11-nyat.onrender.com';
 
 const server = http.createServer(app);
 const io = socketIO(server, {
