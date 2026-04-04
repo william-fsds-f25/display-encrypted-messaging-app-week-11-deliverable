@@ -13,7 +13,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ============ CORS CONFIGURATION - HARDCODED ============
-// UPDATE THIS URL TO YOUR ACTUAL FRONTEND URL
+// REPLACE THIS URL WITH YOUR ACTUAL FRONTEND URL
 const FRONTEND_URL = 'https://display-encrypted-messaging-app-week-11-2mbi.onrender.com';
 
 const server = http.createServer(app);
@@ -31,17 +31,16 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Use environment variable for database path (Render persistent disk)
+// Database setup
 const dbPath = process.env.DATABASE_PATH || 'database.sqlite';
 const db = new sqlite3.Database(dbPath);
 
-// Helper: truncate to 50 chars
+// Helper functions
 function truncate(str, max = 50) {
   if (!str) return '';
   return str.length > max ? str.substring(0, max) + '...' : str;
 }
 
-// Helper: extract and truncate encrypted payload for logging
 function logEncrypted(label, messageText) {
   try {
     const parsed = JSON.parse(messageText);
@@ -101,7 +100,7 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-// Root route
+// Root route - shows CORS status
 app.get('/', (req, res) => {
   res.json({ 
     message: 'Encrypted Messaging API is running!',
