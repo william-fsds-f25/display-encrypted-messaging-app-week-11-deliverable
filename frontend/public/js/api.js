@@ -1,7 +1,8 @@
 // frontend/src/js/api.js
 import { getToken } from './utils.js';
 
-const API_URL = 'http://localhost:5000/api';
+// Updated to use your Render backend URL
+const API_URL = 'https://display-encrypted-messaging-app-week-11-whqi.onrender.com/api';
 
 export async function apiRequest(endpoint, options = {}) {
     const headers = { 'Content-Type': 'application/json' };
