@@ -12,8 +12,8 @@ const app = express();
 // Use environment port (Render sets this automatically)
 const PORT = process.env.PORT || 5000;
 
-// ============ CORS CONFIGURATION - UPDATE THIS URL ============
-// REPLACE THIS WITH YOUR ACTUAL FRONTEND URL FROM RENDER
+// ============ CORS CONFIGURATION - HARDCODED ============
+// UPDATE THIS URL TO YOUR ACTUAL FRONTEND URL
 const FRONTEND_URL = 'https://display-encrypted-messaging-app-week-11-2mbi.onrender.com';
 
 const server = http.createServer(app);
@@ -29,10 +29,9 @@ app.use(cors({
   origin: FRONTEND_URL,
   credentials: true
 }));
-
 app.use(express.json());
 
-// ============ DATABASE SETUP ============
+// Use environment variable for database path (Render persistent disk)
 const dbPath = process.env.DATABASE_PATH || 'database.sqlite';
 const db = new sqlite3.Database(dbPath);
 
@@ -75,7 +74,6 @@ db.serialize(() => {
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
-  // Add encrypted_private_key column if it doesn't exist
   db.run(`ALTER TABLE users ADD COLUMN encrypted_private_key TEXT`, err => {
     if (err && !err.message.includes('duplicate column')) {
       console.error('Migration error:', err.message);
@@ -87,7 +85,7 @@ db.serialize(() => {
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
-// ============ AUTH MIDDLEWARE ============
+// Auth middleware
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -103,7 +101,7 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-// ============ TEST ROUTES ============
+// Root route
 app.get('/', (req, res) => {
   res.json({ 
     message: 'Encrypted Messaging API is running!',
@@ -112,11 +110,12 @@ app.get('/', (req, res) => {
   });
 });
 
+// Test route
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is working!' });
 });
 
-// ============ REGISTER ============
+// Register
 app.post('/api/register', async (req, res) => {
   const { username, email, password, publicKey, encryptedPrivateKey } = req.body;
 
@@ -143,7 +142,7 @@ app.post('/api/register', async (req, res) => {
   );
 });
 
-// ============ LOGIN ============
+// Login
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -171,7 +170,7 @@ app.post('/api/login', async (req, res) => {
   });
 });
 
-// ============ GET USERS ============
+// Get users
 app.get('/api/users', verifyToken, (req, res) => {
   db.all('SELECT id, username, public_key FROM users WHERE id != ?', [req.userId], (err, users) => {
     if (err) return res.status(500).json({ error: 'Database error' });
@@ -179,7 +178,7 @@ app.get('/api/users', verifyToken, (req, res) => {
   });
 });
 
-// ============ GET MESSAGES ============
+// Get messages
 app.get('/api/messages/:userId', verifyToken, (req, res) => {
   db.all(
     `SELECT * FROM messages
@@ -194,7 +193,7 @@ app.get('/api/messages/:userId', verifyToken, (req, res) => {
   );
 });
 
-// ============ SEND MESSAGE ============
+// Send message
 app.post('/api/messages', verifyToken, (req, res) => {
   const { toUser, messageText } = req.body;
   const id = generateId();
@@ -215,7 +214,6 @@ app.post('/api/messages', verifyToken, (req, res) => {
           return res.status(500).json({ error: 'Failed to save message' });
         }
 
-        // Log only the encrypted snippet
         logEncrypted(` ${sender.username} → ${toUser}`, messageText);
 
         const messageData = {
@@ -236,7 +234,7 @@ app.post('/api/messages', verifyToken, (req, res) => {
   });
 });
 
-// ============ SOCKET.IO AUTH ============
+// Socket.io auth middleware
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('No token'));
@@ -258,7 +256,7 @@ io.on('connection', socket => {
   });
 });
 
-// ============ START SERVER ============
+// Start server
 server.listen(PORT, () => {
   console.log(`\n🚀 Server running on http://localhost:${PORT}`);
   console.log(`📡 Test API: http://localhost:${PORT}/api/test`);
