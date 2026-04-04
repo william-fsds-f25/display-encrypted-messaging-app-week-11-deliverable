@@ -14,7 +14,6 @@ const PORT = process.env.PORT || 5000;
 
 // ============ CORS CONFIGURATION - WILDCARD (ALLOWS ALL ORIGINS) ============
 // TEMPORARY - This allows any website to access your API
-// For production, replace with specific origin
 app.use(cors({
     origin: true,
     credentials: true,
@@ -22,8 +21,7 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-// Handle preflight requests
-app.options('*', cors());
+// REMOVED: app.options('*', cors()); - This line was causing the error
 
 const server = http.createServer(app);
 const io = socketIO(server, {
