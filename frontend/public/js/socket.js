@@ -4,7 +4,7 @@ import { getToken } from './utils.js';
 let socket = null;
 
 // Updated to use your Render backend URL
-const SOCKET_URL = 'https://display-encrypted-messaging-app-week-11-whqi.onrender.com';
+const SOCKET_URL = 'https://display-encrypted-messaging-app-week-11-1urj.onrender.com';
 
 export function initSocket(onNewMessage) {
     const token = getToken();
