@@ -2,7 +2,7 @@
 import { getToken } from './utils.js';
 
 // Updated to use your Render backend URL
-const API_URL = 'https://display-encrypted-messaging-app-week-11-whqi.onrender.com/api';
+const API_URL = 'https://display-encrypted-messaging-app-week-11-1urj.onrender.com/api';
 
 export async function apiRequest(endpoint, options = {}) {
     const headers = { 'Content-Type': 'application/json' };
